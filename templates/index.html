@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Meeting Minutes Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --success-color: #059669;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            padding: 2rem;
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .app-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .app-subtitle {
+            font-size: 1.1rem;
+            color: #64748b;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: #f8fafc;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .progress-container {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active {
+            background: #e0f2fe;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .progress-step.completed {
+            background: #dcfce7;
+            border-left: 4px solid var(--success-color);
+        }
+
+        .step-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            background: #e2e8f0;
+        }
+
+        .progress-step.active .step-icon {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .progress-step.completed .step-icon {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .result-container {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .result-tabs {
+            margin-bottom: 1rem;
+        }
+
+        .result-content {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .file-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background: #f8fafc;
+        }
+
+        .error-message {
+            color: #dc2626;
+            background: #fee2e2;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .loading-spinner {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-width: 0.2rem;
+        }
+
+        .mom-options {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 0.5rem;
+        }
+
+        .mom-preview {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            margin-top: 1rem;
+        }
+
+        .mom-preview pre {
+            white-space: pre-wrap;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-header">
+            <h1 class="app-title">AI Meeting Minutes Generator</h1>
+            <p class="app-subtitle">Upload your meeting recording and get professional minutes automatically generated</p>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="upload-area" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <h4>Drag & Drop your audio file here</h4>
+                        <p class="text-muted">or</p>
+                        <input type="file" class="d-none" id="audioFile" name="audioFile" accept=".mp3,.wav,.m4a,.mp4">
+                        <button type="button" class="btn btn-primary" onclick="document.getElementById('audioFile').click()">
+                            Choose File
+                        </button>
+                        <div class="file-info mt-3" id="fileInfo"></div>
+                    </div>
+
+                    <div class="mom-options mt-4">
+                        <h5>MoM Generation Options</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeSpeakers" checked>
+                                    <label class="form-check-label" for="includeSpeakers">
+                                        Include speaker names
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeTimestamps" checked>
+                                    <label class="form-check-label" for="includeTimestamps">
+                                        Include timestamps
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeActionItems" checked>
+                                    <label class="form-check-label" for="includeActionItems">
+                                        Highlight action items
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeSummary" checked>
+                                    <label class="form-check-label" for="includeSummary">
+                                        Include meeting summary
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="submit" class="btn btn-primary" id="submitButton">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="submitSpinner"></span>
+                            Generate Minutes
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" id="clearButton">
+                            <i class="fas fa-trash-alt"></i> Clear
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="progressContainer" class="progress-container">
+            <h5 class="mb-3">Processing Status</h5>
+            <div id="step1" class="progress-step">
+                <div class="step-icon">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">Starting transcription</h6>
+                    <p class="text-muted mb-0">Preparing your audio file...</p>
+                </div>
+            </div>
+            <div id="step2" class="progress-step">
+                <div class="step-icon">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">Transcribing audio</h6>
+                    <p class="text-muted mb-0">Converting speech to text...</p>
+                </div>
+            </div>
+            <div id="step3" class="progress-step">
+                <div class="step-icon">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">Generating minutes</h6>
+                    <p class="text-muted mb-0">Creating professional meeting minutes...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="result" class="result-container">
+            <ul class="nav nav-tabs result-tabs" id="resultTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="transcript-tab" data-bs-toggle="tab" data-bs-target="#transcript" type="button" role="tab">
+                        <i class="fas fa-file-alt"></i> Transcript
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="mom-tab" data-bs-toggle="tab" data-bs-target="#mom" type="button" role="tab">
+                        <i class="fas fa-clipboard-list"></i> Meeting Minutes
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="transcript" role="tabpanel">
+                    <div class="result-content">
+                        <pre id="transcriptText"></pre>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="mom" role="tabpanel">
+                    <div class="result-content">
+                        <div id="momText" class="mom-preview"></div>
+                        <div class="alert alert-success mt-3" id="momFileInfo" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // File handling functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showError(message, details = '') {
+            const fileInfo = document.getElementById('fileInfo');
+            fileInfo.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i> ${message}
+                    ${details ? `<br><small>${details}</small>` : ''}
+                </div>
+            `;
+        }
+
+        // Drag and drop handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('audioFile');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('border-primary');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('border-primary');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            const file = files[0];
+            if (file) {
+                const size = formatFileSize(file.size);
+                const fileInfo = document.getElementById('fileInfo');
+                
+                // Validate file type
+                const allowedTypes = ['.mp3', '.wav', '.m4a', '.mp4'];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedTypes.includes(fileExtension)) {
+                    showError('Unsupported file type', 'Please upload MP3, WAV, M4A, or MP4 files');
+                    document.getElementById('submitButton').disabled = true;
+                    return;
+                }
+                
+                // Validate file size (250MB limit)
+                const maxSize = 250 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    showError('File too large', 'Maximum file size is 250MB');
+                    document.getElementById('submitButton').disabled = true;
+                    return;
+                }
+                
+                fileInfo.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> File selected: ${file.name}<br>
+                        <small>Size: ${size}</small>
+                    </div>
+                `;
+                document.getElementById('submitButton').disabled = false;
+            }
+        }
+
+        // File input change handler
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(this.files);
+        });
+
+        // Form submission
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showError('Please select a file first');
+                return;
+            }
+            
+            formData.append('audioFile', file);
+            
+            // Add MoM options
+            formData.append('includeSpeakers', document.getElementById('includeSpeakers').checked);
+            formData.append('includeTimestamps', document.getElementById('includeTimestamps').checked);
+            formData.append('includeActionItems', document.getElementById('includeActionItems').checked);
+            formData.append('includeSummary', document.getElementById('includeSummary').checked);
+            
+            // Reset UI
+            document.getElementById('fileInfo').innerHTML = '';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'block';
+            
+            // Reset progress steps
+            document.querySelectorAll('.progress-step').forEach(step => {
+                step.className = 'progress-step';
+            });
+            
+            // Show first step
+            document.getElementById('step1').className = 'progress-step active';
+            
+            // Disable submit button and show spinner
+            const submitButton = document.getElementById('submitButton');
+            const submitSpinner = document.getElementById('submitSpinner');
+            submitButton.disabled = true;
+            submitSpinner.classList.remove('d-none');
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.status === 'success') {
+                        // Update progress steps
+                        document.querySelectorAll('.progress-step').forEach(step => {
+                            step.className = 'progress-step completed';
+                            step.querySelector('.step-icon').innerHTML = '<i class="fas fa-check"></i>';
+                        });
+                        
+                        // Show results
+                        document.getElementById('result').style.display = 'block';
+                        document.getElementById('transcriptText').textContent = data.transcript;
+                        
+                        if (data.mom) {
+                            document.getElementById('momText').innerHTML = data.mom;
+                            
+                            const momFileInfo = document.getElementById('momFileInfo');
+                            if (data.mom_file && data.mom_status === 'success') {
+                                momFileInfo.style.display = 'block';
+                                momFileInfo.innerHTML = `
+                                    <i class="fas fa-check-circle"></i> Meeting minutes generated successfully!<br>
+                                    <small>Saved as: ${data.mom_file}</small>
+                                `;
+                            }
+                        }
+                    } else {
+                        showError(data.error || 'An error occurred');
+                    }
+                } else {
+                    showError(data.error || 'Failed to process file');
+                }
+            } catch (error) {
+                showError('An error occurred', error.message);
+            } finally {
+                submitButton.disabled = false;
+                submitSpinner.classList.add('d-none');
+            }
+        });
+
+        // Clear button handler
+        document.getElementById('clearButton').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/clear', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'success') {
+                    // Reset form and UI
+                    document.getElementById('uploadForm').reset();
+                    document.getElementById('fileInfo').innerHTML = '';
+                    document.getElementById('result').style.display = 'none';
+                    document.getElementById('progressContainer').style.display = 'none';
+                    document.getElementById('submitButton').disabled = true;
+                } else {
+                    showError('Failed to clear files');
+                }
+            } catch (error) {
+                showError('An error occurred', error.message);
+            }
+        });
+    </script>
+</body>
+</html> 
