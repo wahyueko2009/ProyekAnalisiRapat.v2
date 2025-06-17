@@ -18,7 +18,8 @@ def init_pipeline():
     """Initialize the transcription pipeline"""
     global transcription_pipeline
     try:
-        transcription_pipeline = TranscriptionPipeline(model_size="medium")
+        transcription_pipeline = TranscriptionPipeline()
+        transcription_pipeline.initialize_models()
         logger.info("Transcription pipeline initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize transcription pipeline: {str(e)}")
@@ -40,7 +41,7 @@ def process_audio_file(filepath):
             init_pipeline()
         
         # Process audio and get transcript with speaker diarization
-        result = transcription_pipeline.transcribe(filepath)
+        result = transcription_pipeline.transcribe_audio(filepath)
         
         # Calculate duration
         duration = librosa.get_duration(path=filepath)

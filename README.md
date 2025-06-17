@@ -28,7 +28,7 @@ cd analisis-rapat
 
 2. Buat virtual environment:
 ```bash
-python -m venv venv
+python 
 ```
 
 3. Aktifkan virtual environment:

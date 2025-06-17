@@ -8,9 +8,7 @@ import noisereduce as nr
 import numpy as np
 import ffmpeg
 from pyannote.audio import Pipeline
-from pyctcdecode import build_ctcdecoder
 from deepmultilingualpunctuation import PunctuationModel
-import kenlm
 import tempfile
 import subprocess
 from pathlib import Path
@@ -30,14 +28,12 @@ class TranscriptionPipeline:
         self.whisper_model = None
         self.diarization_pipeline = None
         self.punctuation_model = None
-        self.lm_model = None
-        self.ctc_decoder = None
         
     def initialize_models(self):
         """Initialize all required models"""
         try:
             # Initialize WhisperX
-            self.whisper_model = whisperx.load_model("large-v2", self.device)
+            self.whisper_model = whisperx.load_model("large-v2", self.device, compute_type="float32")
             logger.info("WhisperX model loaded successfully")
             
             # Initialize diarization pipeline
@@ -50,17 +46,6 @@ class TranscriptionPipeline:
             # Initialize punctuation model
             self.punctuation_model = PunctuationModel()
             logger.info("Punctuation model loaded successfully")
-            
-            # Initialize KenLM model
-            self.lm_model = kenlm.Model("models/id.bin")
-            logger.info("KenLM model loaded successfully")
-            
-            # Initialize CTC decoder
-            self.ctc_decoder = build_ctcdecoder(
-                labels=[" "] + list("abcdefghijklmnopqrstuvwxyz"),
-                kenlm_model_path="models/id.bin"
-            )
-            logger.info("CTC decoder initialized successfully")
             
         except Exception as e:
             logger.error(f"Error initializing models: {str(e)}")
@@ -112,7 +97,7 @@ class TranscriptionPipeline:
 
     def transcribe_audio(self, audio_path):
         """
-        Transcribe audio with speaker diarization and language model rescoring
+        Transcribe audio with speaker diarization
         """
         try:
             # Preprocess audio
@@ -139,14 +124,10 @@ class TranscriptionPipeline:
             logger.info("Combining transcription with speaker labels...")
             result = whisperx.assign_word_speakers(diarize_segments, result)
             
-            # Apply language model rescoring
-            logger.info("Applying language model rescoring...")
+            # Restore punctuation
+            logger.info("Restoring punctuation...")
             for segment in result["segments"]:
                 if "text" in segment:
-                    # Rescore with KenLM
-                    segment["text"] = self.ctc_decoder.decode(segment["text"])
-                    
-                    # Restore punctuation
                     segment["text"] = self.punctuation_model.restore_punctuation(segment["text"])
             
             # Clean up temporary file
